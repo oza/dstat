@@ -775,6 +775,24 @@ class dstat_cpu24(dstat):
         if step == op.delay:
             self.set1.update(self.set2)
 
+class diskstats:
+    # https://www.kernel.org/doc/Documentation/ABI/testing/procfs-diskstats
+    MAJOR_NUMBER = 0
+    MINOR_NUMBER = 1
+    DEVICE_NAME = 2
+    READS_COMPLETED = 3
+    READS_MERGED = 4
+    SECTORS_READ = 5
+    TIME_SPEND_READING = 6
+    WRITES_COMPLETED = 7
+    WRITES_MERGED = 8
+    SECTORS_WRITTEN = 9
+    TIME_SPENT_WRITING = 10
+    IO_IN_PROGRESS = 11
+    TIME_SPENT_IO = 12
+    WEIGHTED_TIME_SPENT_IO = 13
+
+
 class dstat_disk(dstat):
     def __init__(self):
         self.nick = ('read', 'writ')
@@ -787,8 +805,8 @@ class dstat_disk(dstat):
         ret = []
         for l in self.splitlines():
             if len(l) < 13: continue
-            if l[3:] == ['0',] * 11: continue
-            name = l[2]
+            if l[diskstats.READS_COMPLETED:] == ['0',] * 11: continue
+            name = l[diskstats.DEVICE_NAME]
             ret.append(name)
         for item in objlist: ret.append(item)
         if not ret:
@@ -842,18 +860,18 @@ class dstat_disk(dstat):
         for name in self.vars: self.set2[name] = (0, 0)
         for l in self.splitlines():
             if len(l) < 13: continue
-            if l[5] == '0' and l[9] == '0': continue
-            name = l[2]
-            if l[3:] == ['0',] * 11: continue
+            if l[diskstats.SECTORS_READ] == '0' and l[diskstats.SECTORS_WRITTEN] == '0': continue
+            name = l[diskstats.DEVICE_NAME]
+            if l[diskstats.READS_COMPLETED:] == ['0',] * 11: continue
             if not self.diskfilter.match(name):
-                self.set2['total'] = ( self.set2['total'][0] + long(l[5]), self.set2['total'][1] + long(l[9]) )
+                self.set2['total'] = ( self.set2['total'][0] + long(l[diskstats.SECTORS_READ]), self.set2['total'][1] + long(l[diskstats.SECTORS_WRITTEN]) )
             if name in self.vars and name != 'total':
-                self.set2[name] = ( self.set2[name][0] + long(l[5]), self.set2[name][1] + long(l[9]) )
+                self.set2[name] = ( self.set2[name][0] + long(l[diskstats.SECTORS_READ]), self.set2[name][1] + long(l[diskstats.SECTORS_WRITTEN]) )
             for diskset in self.vars:
                 if diskset in op.diskset:
                     for disk in op.diskset[diskset]:
                         if fnmatch.fnmatch(name, disk):
-                            self.set2[diskset] = ( self.set2[diskset][0] + long(l[5]), self.set2[diskset][1] + long(l[9]) )
+                            self.set2[diskset] = ( self.set2[diskset][0] + long(l[diskstats.SECTORS_READ]), self.set2[diskset][1] + long(l[diskstats.SECTORS_WRITTEN]) )
 
         for name in self.set2:
             self.val[name] = map(lambda x, y: (y - x) * 512.0 / elapsed, self.set1[name], self.set2[name])
@@ -1210,8 +1228,8 @@ class dstat_io(dstat):
         ret = []
         for l in self.splitlines():
             if len(l) < 13: continue
-            if l[3:] == ['0',] * 11: continue
-            name = l[2]
+            if l[diskstats.READS_COMPLETED:] == ['0',] * 11: continue
+            name = l[diskstats.DEVICE_NAME]
             ret.append(name)
         for item in objlist: ret.append(item)
         if not ret:
@@ -1244,18 +1262,18 @@ class dstat_io(dstat):
         for name in self.vars: self.set2[name] = (0, 0)
         for l in self.splitlines():
             if len(l) < 13: continue
-            if l[3] == '0' and l[7] == '0': continue
-            name = l[2]
-            if l[3:] == ['0',] * 11: continue
+            if l[diskstats.READS_COMPLETED] == '0' and l[diskstats.WRITES_COMPLETED] == '0': continue
+            name = l[diskstats.DEVICE_NAME]
+            if l[diskstats.READS_COMPLETED:] == ['0',] * 11: continue
             if not self.diskfilter.match(name):
-                self.set2['total'] = ( self.set2['total'][0] + long(l[3]), self.set2['total'][1] + long(l[7]) )
+                self.set2['total'] = ( self.set2['total'][0] + long(l[diskstats.READS_COMPLETED]), self.set2['total'][1] + long(l[diskstats.WRITES_COMPLETED]) )
             if name in self.vars and name != 'total':
-                self.set2[name] = ( self.set2[name][0] + long(l[3]), self.set2[name][1] + long(l[7]) )
+                self.set2[name] = ( self.set2[name][0] + long(l[diskstats.READS_COMPLETED]), self.set2[name][1] + long(l[diskstats.WRITES_COMPLETED]) )
             for diskset in self.vars:
                 if diskset in op.diskset:
                     for disk in op.diskset[diskset]:
                         if fnmatch.fnmatch(name, disk):
-                            self.set2[diskset] = ( self.set2[diskset][0] + long(l[3]), self.set2[diskset][1] + long(l[7]) )
+                            self.set2[diskset] = ( self.set2[diskset][0] + long(l[diskstats.READS_COMPLETED]), self.set2[diskset][1] + long(l[diskstats.WRITES_COMPLETED]) )
 
         for name in self.set2:
             self.val[name] = map(lambda x, y: (y - x) * 1.0 / elapsed, self.set1[name], self.set2[name])
