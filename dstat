@@ -294,6 +294,7 @@ Dstat options:
   -y, --sys                enable system stats
 
   --aio                    enable aio stats
+  --cpu-adv                enable advanced cpu stats
   --fs, --filesystem       enable fs stats
   --ipc                    enable ipc stats
   --lock                   enable lock stats
